@@ -1,0 +1,5 @@
+# 当前 build-test.py 无外部依赖，占位用
+# 后续接入 API 后添加，例如：
+# requests
+# pandas
+# openpyxl

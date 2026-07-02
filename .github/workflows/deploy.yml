@@ -1,0 +1,35 @@
+name: 自动更新并部署
+
+on:
+  schedule:
+    - cron: '0 23 * * *'        # 每天北京时间 7:00（UTC 23:00）
+  workflow_dispatch:              # 支持手动触发
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write             # 允许 push 回仓库
+
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 运行构建脚本
+        run: python build-test.py    # 后续改成 build.py 或 fetch_and_build.py
+
+      - name: 提交并推送更新
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --staged --quiet || git commit -m "🤖 自动更新数据 [skip ci]"
+          git push

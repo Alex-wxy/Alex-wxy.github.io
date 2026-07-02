@@ -1,0 +1,11 @@
+# Excel 数据文件（太大，不上传）
+*.xlsx
+
+# IDE 配置
+.vscode/
+.claude/
+
+# 方案文档（不需要部署）
+网站方案.md
+网站方案.assets/
+技术实施方案说明.md
