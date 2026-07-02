@@ -3,7 +3,7 @@
 # 造假数据，什么都不依赖
 fake_data = {
     "sites": [
-        {"name": "测试", "url": "https://example.com", "score": 85},
+        {"name": "测试定时任务", "url": "https://example.com", "score": 85},
         {"name": "测试网站B", "url": "https://example.org", "score": 72},
     ]
 }
