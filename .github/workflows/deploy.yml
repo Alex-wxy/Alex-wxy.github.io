@@ -2,7 +2,7 @@ name: 自动更新并部署
 
 on:
   schedule:
-    - cron: '0 23 * * *'        # 每天北京时间 7:00（UTC 23:00）
+    - cron: '29 8 * * *'        # 每天北京时间 7:00（UTC 23:00）
   workflow_dispatch:              # 支持手动触发
 
 jobs:
