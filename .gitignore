@@ -6,6 +6,8 @@
 .claude/
 venv/
 
+test.py
+
 # 方案文档（不需要部署）
 网站方案.md
 网站方案.assets/
