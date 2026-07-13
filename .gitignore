@@ -4,6 +4,7 @@
 # IDE 配置
 .vscode/
 .claude/
+venv/
 
 # 方案文档（不需要部署）
 网站方案.md
