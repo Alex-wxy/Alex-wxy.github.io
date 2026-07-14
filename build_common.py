@@ -14,11 +14,11 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 CSS = '''<style>
 :root{
-  --bg:#D6E6F0; --panel:#ffffff; --panel2:#EAF3F9; --line:#C8DAE6;
+  --bg:#E8F2F8; --panel:#ffffff; --panel2:#F2F7FA; --line:#D4E2EC;
   --txt:#367198; --sub:#5a7d99; --accent:#C00000; --accent2:#1a3a6b;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:linear-gradient(180deg,#E8F1F7 0%,#D6E6F0 45%,#E4EEF5 100%) fixed;color:var(--txt);font-family:"Microsoft YaHei","PingFang SC",-apple-system,Segoe UI,sans-serif;padding:24px 48px 60px}
+body{background:linear-gradient(180deg,#F2F7FA 0%,#E8F2F8 45%,#F0F5F9 100%) fixed;color:var(--txt);font-family:"Microsoft YaHei","PingFang SC",-apple-system,Segoe UI,sans-serif;padding:24px 48px 60px}
 h1{font-size:24px;font-weight:700;letter-spacing:.5px;color:var(--accent2)}
 .meta{color:var(--sub);font-size:13px;margin-top:6px;line-height:1.7}
 .meta b{color:var(--txt)}
@@ -29,7 +29,7 @@ h1{font-size:24px;font-weight:700;letter-spacing:.5px;color:var(--accent2)}
   transition:.15s;box-shadow:0 2px 8px rgba(26,58,107,.06);font-family:inherit;
 }
 .tbtn:hover{color:var(--txt)}
-.tbtn.active{color:#fff;background:linear-gradient(135deg,#1a3a6b,#C00000);border-color:transparent;box-shadow:0 4px 14px rgba(192,0,0,.25)}
+.tbtn.active{color:#fff;background:linear-gradient(135deg,#367198,#FF8080);border-color:transparent;box-shadow:0 4px 14px rgba(54,113,152,.3)}
 .main-area{display:flex;gap:18px;margin-top:10px;min-height:500px;width:100%}
 .content-area{flex:1;min-width:0;width:0}
 .sidebar{display:flex;flex-direction:column;gap:0;min-width:150px;max-width:170px;flex-shrink:0;padding-top:24px;position:sticky;top:10px;align-self:flex-start;max-height:calc(100vh - 20px);overflow-y:auto}
@@ -38,8 +38,14 @@ h1{font-size:24px;font-weight:700;letter-spacing:.5px;color:var(--accent2)}
   border:none;border-left:3px solid transparent;border-radius:0;padding:9px 14px;cursor:pointer;
   transition:.15s;font-family:inherit;text-align:left;white-space:nowrap;
 }
-.sbtn:hover{color:var(--txt);background:#EAF3F9;border-left-color:#B4CAD8}
-.sbtn.active{color:var(--accent2);background:#EAF3F9;border-left-color:var(--accent);font-weight:600}
+.sbtn:hover{color:var(--txt);background:var(--panel2);border-left-color:#B4CAD8}
+.sbtn.active{color:var(--accent2);background:var(--panel2);border-left-color:var(--accent);font-weight:600}
+.schild{position:relative;display:none;padding:6px 12px 6px 32px!important;font-size:13px!important;font-weight:500!important;color:var(--sub);background:transparent;border:none;border-left:1px solid #d0dce6;border-radius:0;cursor:pointer;transition:.15s;font-family:inherit;text-align:left;white-space:nowrap;margin-left:14px}
+.schild::before{content:'·';position:absolute;left:18px;color:#b0c0d0}
+.schild.show{display:block}
+.schild:hover{color:var(--txt);background:var(--panel2);border-left-color:#B4CAD8}
+.schild.active{color:var(--accent2);background:var(--panel2);border-left-color:#FFB2B2!important;font-weight:600!important}
+.schild:last-child{border-left:1px solid transparent;border-image:linear-gradient(to bottom,#d0dce6 0%,transparent 100%) 1}
 .sec{font-size:18px;font-weight:700;margin:24px 0 8px;padding-left:11px;border-left:5px solid var(--accent2)}
 .seclabel{font-size:14.5px;font-weight:700;color:var(--accent2);margin:20px 0 2px;padding-left:9px;border-left:4px solid var(--accent2)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:18px;margin-top:12px}
@@ -49,12 +55,6 @@ h1{font-size:24px;font-weight:700;letter-spacing:.5px;color:var(--accent2)}
 .chart{width:100%;height:380px}
 .full{grid-column:1/-1}
 footer{color:var(--sub);font-size:12px;margin-top:30px;line-height:1.8}
-.mobile-guard{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#E8F1F7,#D6E6F0);z-index:99999;align-items:center;justify-content:center;flex-direction:column;font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif}
-.mobile-guard.show{display:flex}
-.mobile-guard-box{text-align:center;padding:48px 32px;background:#fff;border-radius:20px;box-shadow:0 8px 32px rgba(26,58,107,.15);max-width:320px;margin:20px}
-.mobile-guard-icon{font-size:64px;margin-bottom:12px}
-.mobile-guard-box h2{font-size:22px;color:#1a3a6b;margin-bottom:10px}
-.mobile-guard-box p{font-size:15px;color:#5a7d99;line-height:1.8}
 </style>'''
 
 
@@ -67,28 +67,12 @@ HTML_HEAD = '''<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-<title>请使用电脑端访问 - 锂电产业链数据跟踪</title>
+<title>锂电产业链数据跟踪</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 ''' + CSS + '''
 </head>
 <body>
-<script>
-// 手机端检测——必须在所有外部资源加载前执行
-(function() {
-  var ua = navigator.userAgent.toLowerCase();
-  if (/iphone|ipad|android|mobile/.test(ua) || screen.width <= 1024 || window.innerWidth <= 1024) {
-    document.write('<style>body>*{display:none}</style><div style="position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#E8F1F7,#D6E6F0);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:sans-serif"><div style="text-align:center;padding:48px 32px;background:#fff;border-radius:20px;box-shadow:0 8px 32px rgba(26,58,107,.15);max-width:320px;margin:20px"><div style="font-size:64px;margin-bottom:12px">&#x1F4BB;</div><h2 style="color:#1a3a6b;font-size:22px;margin:0 0 10px">请使用电脑端访问</h2><p style="color:#5a7d99;font-size:15px;line-height:1.8;margin:0">本页面数据量较大，仅支持电脑端浏览，<br>请在电脑端浏览器打开此链接。</p></div></div>');
-    document.close();
-  }
-})();
-</script>
-<div class="mobile-guard">
-  <div class="mobile-guard-box">
-    <div class="mobile-guard-icon">&#x1F4BB;</div>
-    <h2 style="color:#1a3a6b;font-family:sans-serif;margin:0 0 10px 0;font-size:22px">请使用电脑端访问</h2>
-    <p style="color:#5a7d99;font-family:sans-serif;margin:0;font-size:15px;line-height:1.8">本页面数据量较大，仅支持电脑端浏览，<br>请在电脑端浏览器打开此链接。</p>
-  </div>
-</div>
+<script>if(screen.width<1024)document.write('<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#E8F1F7;z-index:99999;display:flex;align-items:center;justify-content:center;font:18px/1.8 sans-serif;color:#1a3a6b;text-align:center"><p>请使用电脑端访问<br>本页面仅支持电脑端浏览</p></div>'),document.close()</script>
 <h1>【中信建投新能源】锂电产业链数据跟踪</h1>
 
 <div class="tnav" id="tnav"></div>
@@ -104,18 +88,6 @@ HTML_HEAD = '''<!DOCTYPE html>
 </footer>
 
 <script>
-// ===== 手机端检测（UA + 物理分辨率双重检测） =====
-(function() {
-  var ua = navigator.userAgent.toLowerCase();
-  var isMobile = /iphone|ipad|android|mobile|phone/.test(ua);
-  var smallScreen = screen.width <= 1024 || window.innerWidth <= 1024;
-  if (isMobile || smallScreen) {
-    var guard = document.getElementById('mobile_guard');
-    if (guard) { guard.className = 'mobile-guard show'; }
-    document.body.style.overflow = 'hidden';
-  }
-})();
-
 // ===== 数据 =====
 const RAW = __JSON__;
 
@@ -172,36 +144,72 @@ window.addEventListener('resize', function() { CHARTS_ARR.forEach(function(c) { 
     currentTopCat = cat;
     metaInfo.innerHTML = cat.name + ' · 数据区间：<b>' + (cat.dateRange || '待录入') + '</b> · 来源：中信建投证券整理';
 
-    // 渲染二级导航（sheet 侧边栏）
+    // 渲染二级导航（sheet 侧边栏 + 子项）
     sidebar.innerHTML = '';
-    if (cat.sheets && cat.sheets.length > 0) {
-      cat.sheets.forEach(function(s, i) {
+    var infos = cat.sheetInfos || cat.sheets.map(function(s) { return {name: s, children: []}; });
+    var isFirst = true;
+    if (infos.length > 0) {
+      infos.forEach(function(info) {
+        var hasKids = info.children && info.children.length > 0;
         var btn = document.createElement('button');
-        btn.className = 'sbtn' + (i === 0 ? ' active' : '');
-        btn.textContent = s;
-        btn.addEventListener('click', function() {
-          document.querySelectorAll('.sbtn').forEach(function(b) { b.classList.remove('active'); });
-          btn.classList.add('active');
-          switchSheet(s);
-        });
+        btn.className = 'sbtn' + (isFirst ? ' active' : '');
+        btn.textContent = info.name + (hasKids ? ' ▸' : '');
         sidebar.appendChild(btn);
+
+        var children = [];
+        (info.children || []).forEach(function(child) {
+          var cbtn = document.createElement('button');
+          cbtn.className = 'schild';
+          cbtn.textContent = child;
+          cbtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.querySelectorAll('.sbtn,.schild').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            cbtn.classList.add('active');
+            switchSheet(info.name, child);
+          });
+          children.push(cbtn);
+          sidebar.appendChild(cbtn);
+        });
+
+        btn.addEventListener('click', function() {
+          var showing = children.length > 0 && children[0].classList.contains('show');
+          document.querySelectorAll('.sbtn,.schild').forEach(function(b) { b.classList.remove('active'); });
+          document.querySelectorAll('.schild').forEach(function(b) { b.classList.remove('show'); });
+          btn.classList.add('active');
+          if (children.length > 0 && !showing) {
+            btn.textContent = info.name + ' ▾';
+            children.forEach(function(c) { c.classList.add('show'); });
+            if (children[0]) { children[0].classList.add('active'); switchSheet(info.name, info.children[0]); }
+          } else {
+            btn.textContent = info.name + ' ▸';
+            switchSheet(info.name);
+          }
+        });
+        isFirst = false;
       });
-      switchSheet(cat.sheets[0]);
+      switchSheet(infos[0].name);
     } else {
       content.innerHTML = '<div class="sec" style="margin-top:24px">' + cat.name + '</div><p style="color:var(--sub);margin-top:12px">数据模块正在建设中，敬请期待。</p>';
     }
   }
 
-  function switchSheet(name) {
+  function switchSheet(name, country) {
     currentSheet = name;
     // 清理旧图表
     CHARTS_ARR.forEach(function(c) { c.dispose(); });
     CHARTS_ARR.length = 0;
 
     var gd = currentTopCat.sheetData[name];
-    var renderFn = RENDER_MAP[name];
+    var renderFn = RENDER_MAP[name] || (gd && gd.pics ? renderPics : null);
     if (renderFn && gd) {
-      renderFn(gd);
+      // 按国家过滤 pics
+      if (country && gd.pics) {
+        var filtered = {pics: gd.pics.filter(function(p) { return p.title.indexOf(country) >= 0; }), source: gd.source};
+        renderFn(filtered);
+      } else {
+        renderFn(gd);
+      }
     } else {
       content.innerHTML = '<div class="sec" style="margin-top:24px">' + name + '</div><p style="color:var(--sub);margin-top:12px">该模块正在建设中，敬请期待。</p>';
     }

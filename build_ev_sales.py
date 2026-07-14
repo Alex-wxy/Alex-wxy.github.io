@@ -108,6 +108,7 @@ RENDER_MAP['全球销量-Marklines']      = renderPics;
 RENDER_MAP['中国销量-中汽协']         = renderPics;
 RENDER_MAP['中国销量-乘联会']         = renderPics;
 RENDER_MAP['欧洲九国销量-各国官网']   = renderPics;
+RENDER_MAP['欧洲九国销量-分国家']   = renderPics;
 RENDER_MAP['欧洲销量-Marklines']      = renderPics;
 RENDER_MAP['美国销量-Marklines']      = renderPics;
 RENDER_MAP['日韩销量-Marklines']      = renderPics;

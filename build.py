@@ -36,8 +36,10 @@ CATEGORIES = [
         "sheets": [
             {"name": "全球销量-Marklines",      "source": "Marklines"},
             {"name": "中国销量-中汽协",         "source": "中汽协"},
-            {"name": "中国销量-乘联会",         "source": "乘联会"},
-            {"name": "欧洲九国销量-各国官网",   "source": "各国官网"},
+            {"name": "中国销量-乘联会",          "source": "乘联会"},
+            {"name": "欧洲九国销量-各国官网",    "source": "各国官网"},
+            {"name": "欧洲九国销量-分国家",      "source": "各国官网",
+             "children": ["法国","英国","德国","意大利","挪威","瑞典","葡萄牙","西班牙","丹麦"]},
             {"name": "欧洲销量-Marklines",      "source": "Marklines"},
             {"name": "美国销量-Marklines",      "source": "Marklines"},
             {"name": "日韩销量-Marklines",      "source": "Marklines"},
@@ -149,7 +151,13 @@ def assemble(meta_rows, data_rows):
                 if dr:
                     parts = dr.split(" ~ ")
                     cat_all_dates.extend(parts)
-                # 调试：打印每个 sheet 的 pic 信息
+                # 国家分组：用于二级侧边栏
+                if sheet_info.get("children"):
+                    country_map = {}
+                    for p in pics:
+                        c = _extract_country(p["title"], sheet_info["children"])
+                        country_map.setdefault(c, []).append(p["title"])
+                    sheet_data_all[sheet_name]["country_pics"] = country_map
                 pic_info = [(p["type"], p["title"], len(p.get("dates", [])) if p["type"]=="mixed" else len(p.get("series", []))) for p in pics]
                 print(f"    [{sheet_name}] {len(pics)} pics: {pic_info}")
             else:
@@ -162,15 +170,25 @@ def assemble(meta_rows, data_rows):
     # 5. 输出最终 JSON
     categories_out = []
     for cat in CATEGORIES:
-        sheet_names = [s["name"] for s in cat["sheets"]]
+        sheet_infos = [{"name": s["name"], "children": s.get("children", [])} for s in cat["sheets"]]
+        sheet_names = [s["name"] for s in sheet_infos]
         categories_out.append({
             "name":      cat["name"],
             "sheets":    sheet_names,
+            "sheetInfos": sheet_infos,
             "dateRange": cat.get("dateRange", ""),
             "sheetData": {sn: sheet_data_all.get(sn) for sn in sheet_names},
         })
 
     return {"categories": categories_out}
+
+
+def _extract_country(title, countries):
+    """从 pic_title 中提取国家名。如“法国新能源车销量” → “法国”"""
+    for c in countries:
+        if c in title:
+            return c
+    return title  # 兜底：整个 title 作为组名
 
 
 def _extract_month(date_str):
@@ -214,8 +232,8 @@ def _rows_to_pics(rows):
                 global_dates = dates
 
             # 拆分 bars 和 lines（同比/环比值需 ×100 转百分比）
-            bar_names = set(r["series_name"] for r in pic_rows if r["chart_type"] == "bar")
-            line_names = set(r["series_name"] for r in pic_rows if r["chart_type"] == "line")
+            bar_names = sorted(set(r["series_name"] for r in pic_rows if r["chart_type"] == "bar"))
+            line_names = sorted(set(r["series_name"] for r in pic_rows if r["chart_type"] == "line"))
 
             bars = []
             for name in bar_names:
