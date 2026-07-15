@@ -166,7 +166,8 @@ window.addEventListener('resize', function() { CHARTS_ARR.forEach(function(c) { 
             document.querySelectorAll('.sbtn,.schild').forEach(function(b) { b.classList.remove('active'); });
             btn.classList.add('active');
             cbtn.classList.add('active');
-            switchSheet(info.name, child);
+            var src = info.children_source || info.name;
+            switchSheet(src, child);
           });
           children.push(cbtn);
           sidebar.appendChild(cbtn);
@@ -180,9 +181,9 @@ window.addEventListener('resize', function() { CHARTS_ARR.forEach(function(c) { 
           if (children.length > 0 && !showing) {
             btn.textContent = info.name + ' ▾';
             children.forEach(function(c) { c.classList.add('show'); });
-            if (children[0]) { children[0].classList.add('active'); switchSheet(info.name, info.children[0]); }
+            switchSheet(info.name);
           } else {
-            btn.textContent = info.name + ' ▸';
+            btn.textContent = hasKids ? info.name + ' ▸' : info.name;
             switchSheet(info.name);
           }
         });

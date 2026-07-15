@@ -33,8 +33,10 @@ function renderPics(gd) {
     if (pic.type === 'mixed') {
       var hasLines = pic.lines && pic.lines.length > 0;
       var series = [];
-      var BAR_COLORS = ['#FF8080', '#B4CAD8', '#FFB2B2'];
-      var LINE_COLORS = ['#FF0000', '#044E7E'];
+      var BAR_COLORS = pic.bars.length <= 3
+        ? ['#FF8080','#B4CAD8','#FFB2B2']
+        : ['#D4A5A5','#367198','#FF9999','#4A8AB5','#FFB2B2','#6BA5C8','#FFCCCC','#B4CAD8','#FFE5E5'];
+      var LINE_COLORS = ['#044E7E', '#FF0000'];
       pic.bars.forEach(function(b, i) {
         series.push({ name: b.name, type: 'bar', stack: 'total', data: b.data, itemStyle: { color: BAR_COLORS[i % BAR_COLORS.length] }, emphasis: {} });
       });
