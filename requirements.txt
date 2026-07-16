@@ -1,3 +1,1 @@
 shangjian_api==0.0.6
-pandas>=2.0
-openpyxl>=3.0
