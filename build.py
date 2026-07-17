@@ -252,7 +252,7 @@ def _rows_to_pics(rows):
             pic["left_unit"] = bar_units.pop() if bar_units else "万辆"
             pic["right_unit"] = line_units.pop() if line_units else "%"
 
-        elif g["type"] in ("bar", "bar_clustered"):
+        elif g["type"] == "bar":
             # 纯柱状图（堆积/簇状/单柱），无折线，单 Y 轴
             dates = sorted(set(r["date"] for r in pic_rows))
             pic["dates"] = dates
@@ -301,7 +301,7 @@ def _rows_to_pics(rows):
         pics.append(pic)
 
     # mixed → bar → line 排序
-    type_order = {"mixed": 0, "bar": 1, "bar_clustered": 1, "line": 2}
+    type_order = {"mixed": 0, "bar": 1, "line": 2}
     pics.sort(key=lambda p: type_order.get(p.get("type"), 9))
 
     # 日期范围

@@ -174,7 +174,7 @@ function renderPics(gd) {
         series: series
       });
       if (ch) { ch.on('datazoom', function(ev) { if (ev.batch) ev = ev.batch[0]; var v = ev.end - ev.start; var iv = v > 80 ? 11 : v > 40 ? 5 : v > 15 ? 2 : 0; ch.setOption({ xAxis: { axisLabel: { interval: iv } } }); }); }
-    } else if (pic.type === 'bar' || pic.type === 'bar_clustered') {
+    } else if (pic.type === 'bar') {
       var series = [];
       var BAR_COLORS = pic.bars.length <= 3
         ? ['#FF8080','#B4CAD8','#FFB2B2']
