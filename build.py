@@ -4,12 +4,8 @@
 """
 import json
 import os
-import re
 from shangjian_api.airworks.package_api import AirWorksApi
 from build_common import generate_html
-from build_ev_sales import get_render_js as get_ev_sales_js
-from build_battery import get_render_js as get_battery_js
-from build_material import get_render_js as get_material_js
 
 OUTPUT_HTML = "index.html"
 
@@ -33,6 +29,8 @@ API_CONFIG = {
 CATEGORIES = [
     {
         "name": "新能源车销量",
+        "api_structure": "electriccars__sales__structure",
+        "api_value": "electriccars__sales__value",
         "sheets": [
             {"name": "全球销量-Marklines",      "source": "Marklines"},
             {"name": "中国销量-中汽协",         "source": "中汽协"},
@@ -48,14 +46,23 @@ CATEGORIES = [
     },
     {
         "name": "电池产销&装机数据",
+        "api_structure": "batterysales__structure",
+        "api_value": "batterysales__value",
         "sheets": [
-            # {"name": "...", "source": "..."},
+            {"name": "国内电池产销",       "source": "暂未给出"},
+            {"name": "国内动力电池装机量",       "source": "暂未给出"},
+            {"name": "动力电池单车带电量", "source": "暂未给出"},
+            {"name": "全球动力电池装机量", "source": "暂未给出"},
+            {"name": "头部电池厂商排产",   "source": "暂未给出"},
         ],
     },
     {
         "name": "锂电材料价格&排产数据",
+        "api_structure": "lithiumprice__structure",
+        "api_value": "lithiumprice__value",
         "sheets": [
-            # {"name": "...", "source": "..."},
+            {"name": "价格变化展示格式",     "source": "暂未给出"},
+            {"name": "头部锂电材料厂商排产", "source": "暂未给出"},
         ],
     },
 ]
@@ -95,31 +102,22 @@ def fetch_all(api_method, label):
     return all_items
 
 
-def fetch_meta(api):
-    """获取 series_meta（系列元数据）"""
-    return fetch_all(api.electriccars__sales__structure, "series_meta")
-
-
-def fetch_data_points(api):
-    """获取 data_points（纯数据点）"""
-    return fetch_all(api.electriccars__sales__value, "data_points")
-
 
 def assemble(meta_rows, data_rows):
     """
     将 meta + data 组装为前端 categories JSON 结构
 
-    meta_rows:   [{sheet_name, pic_title, pic_type, series_name, chart_type, y_axis, unit}, ...]
-    data_rows:   [{pic_title, series_name, date, value}, ...]
+    meta_rows:   [{sheet_name, pic_title, pic_type, legend_name, display_type, y_axis, unit}, ...]
+    data_rows:   [{pic_title, legend_name, date, value}, ...]
     """
-    # 1. 建立 meta 索引: (pic_title, series_name) → {sheet_name, chart_type, y_axis, unit, ...}
+    # 1. 建立 meta 索引: (pic_title, legend_name) → {sheet_name, display_type, y_axis, unit, ...}
     meta_map = {}
     for m in meta_rows:
-        key = (m["pic_title"], m["series_name"])
+        key = (m["pic_title"], m["legend_name"])
         meta_map[key] = {
             "sheet_name":  m["sheet_name"],
             "pic_type":    m["pic_type"],
-            "chart_type":  m["chart_type"],
+            "display_type":  m["display_type"],
             "y_axis":      m["y_axis"],
             "unit":        m["unit"],
             "sort_order":  m.get("sort_order"),
@@ -128,7 +126,7 @@ def assemble(meta_rows, data_rows):
     # 2. 补全 data 行: 合并 meta 信息
     enriched = []
     for d in data_rows:
-        key = (d["pic_title"], d["series_name"])
+        key = (d["pic_title"], d["legend_name"])
         if key in meta_map:
             d.update(meta_map[key])#补全操作，补上date和value
         enriched.append(d)
@@ -160,7 +158,7 @@ def assemble(meta_rows, data_rows):
                         c = _extract_country(p["title"], sheet_info["children"])
                         country_map.setdefault(c, []).append(p["title"])
                     sheet_data_all[sheet_name]["country_pics"] = country_map
-                pic_info = [(p["type"], p["title"], len(p.get("dates", [])) if p["type"]=="mixed" else len(p.get("series", []))) for p in pics]
+                pic_info = [(p["type"], p["title"], len(p.get("dates", [])) or len(p.get("bars", [])) or len(p.get("series", []))) for p in pics]
                 print(f"    [{sheet_name}] {len(pics)} pics: {pic_info}")
             else:
                 sheet_data_all[sheet_name] = None
@@ -195,20 +193,6 @@ def _extract_country(title, countries):
     return title  # 兜底：整个 title 作为组名
 
 
-def _extract_month(date_str):
-    """从各种日期格式中提取月份：2017-01→1, 1月→1, 01→1, 1→1"""
-    d = str(date_str).strip()
-    # "2017-01" 或 "2017-1" → 提取最后一个数字组
-    m = re.search(r'(\d+)\s*月?$', d)
-    if m:
-        return int(m.group(1))
-    # 纯数字 "1" 或 "01"
-    m = re.search(r'^(\d+)$', d)
-    if m:
-        return int(m.group(1))
-    return None
-
-
 def _rows_to_pics(rows):
     """
     将同一个 sheet 的扁平行按 pic_title 分组 → 转成前端 pics 结构
@@ -238,53 +222,86 @@ def _rows_to_pics(rows):
             # 拆分 bars 和 lines（同比/环比值需 ×100 转百分比）
             # 按 sort_order 排序，无 sort_order 则按字母
             def _sort_key(name):
-                order = next((r.get("sort_order") for r in pic_rows if r["series_name"] == name and r.get("sort_order") is not None), None)
+                order = next((r.get("sort_order") for r in pic_rows if r["legend_name"] == name and r.get("sort_order") is not None), None)
                 return (order if order is not None else 999, name)
 
-            bar_names = sorted(set(r["series_name"] for r in pic_rows if r["chart_type"] == "bar"), key=_sort_key)
-            line_names = sorted(set(r["series_name"] for r in pic_rows if r["chart_type"] == "line"), key=_sort_key)
+            # 区分 bar 和 line
+            bar_names = sorted(set(r["legend_name"] for r in pic_rows if r["display_type"] != "line"), key=_sort_key)
+            line_names = sorted(set(r["legend_name"] for r in pic_rows if r["display_type"] == "line"), key=_sort_key)
 
             bars = []
+            bar_disp = {}  # legend_name → display_type
+            for r in pic_rows:
+                if r["display_type"] != "line":
+                    bar_disp[r["legend_name"]] = r["display_type"]
             for name in bar_names:
-                data_map = {r["date"]: r["value"] for r in pic_rows if r["series_name"] == name}
-                bars.append({"name": name, "data": [data_map.get(d) for d in dates]})
+                data_map = {r["date"]: r["value"] for r in pic_rows if r["legend_name"] == name}
+                bars.append({"name": name, "display_type": bar_disp.get(name, "bar_stacked"),
+                             "data": [data_map.get(d) for d in dates]})
             pic["bars"] = bars
 
             lines = []
             for name in line_names:
-                data_map = {r["date"]: r["value"] for r in pic_rows if r["series_name"] == name}
+                data_map = {r["date"]: r["value"] for r in pic_rows if r["legend_name"] == name}
                 lines.append({"name": name, "data": [round(data_map[d] * 100, 1) if data_map.get(d) is not None else None for d in dates]})
             pic["lines"] = lines
 
             # 提取左右轴的单位
-            bar_units = set(r["unit"] for r in pic_rows if r["chart_type"] == "bar")
-            line_units = set(r["unit"] for r in pic_rows if r["chart_type"] == "line")
+            bar_units = set(r["unit"] for r in pic_rows if r["display_type"] != "line")
+            line_units = set(r["unit"] for r in pic_rows if r["display_type"] == "line")
             pic["left_unit"] = bar_units.pop() if bar_units else "万辆"
             pic["right_unit"] = line_units.pop() if line_units else "%"
 
-        elif g["type"] == "penetration":
-            # 渗透率 x 轴固定为 1-12 月，每个 series 是一条年线
-            # 提取单位（所有 series 共用）
+        elif g["type"] in ("bar", "bar_clustered"):
+            # 纯柱状图（堆积/簇状/单柱），无折线，单 Y 轴
+            dates = sorted(set(r["date"] for r in pic_rows))
+            pic["dates"] = dates
+            if global_dates is None:
+                global_dates = dates
+
+            def _sort_key(name):
+                order = next((r.get("sort_order") for r in pic_rows if r["legend_name"] == name and r.get("sort_order") is not None), None)
+                return (order if order is not None else 999, name)
+
+            bar_names = sorted(set(r["legend_name"] for r in pic_rows if r["display_type"] != "line"), key=_sort_key)
+            bar_disp = {}
+            for r in pic_rows:
+                if r["display_type"] != "line":
+                    bar_disp[r["legend_name"]] = r["display_type"]
+            bars = []
+            for name in bar_names:
+                data_map = {r["date"]: r["value"] for r in pic_rows if r["legend_name"] == name}
+                bars.append({"name": name, "display_type": bar_disp.get(name, "bar_stacked"),
+                             "data": [data_map.get(d) for d in dates]})
+            pic["bars"] = bars
+
+            bar_units = set(r["unit"] for r in pic_rows if r["display_type"] != "line")
+            pic["left_unit"] = bar_units.pop() if bar_units else ""
+
+        elif g["type"] == "line":
+            # 纯折线，x 轴按 date 字段（月份格式自动按 1,2,3...12 排序）
             pen_units = set(r["unit"] for r in pic_rows)
             pic["unit"] = pen_units.pop() if pen_units else "%"
-            series_names = sorted(set(r["series_name"] for r in pic_rows))
+            dates = sorted(set(r["date"] for r in pic_rows),
+                           key=lambda d: int(d.replace("月", "")) if d.endswith("月") else d)
+            pic["dates"] = dates
+            if global_dates is None:
+                global_dates = dates
+            legend_names = sorted(set(r["legend_name"] for r in pic_rows))
             series_list = []
-            for name in series_names:
-                # 按月份索引 (1-12) 填值，兼容 "2017-01" 和 "1月" 两种格式
-                month_vals = [None] * 12
-                for r in pic_rows:
-                    if r["series_name"] == name: #列名，取出属于当前列的行
-                        d = str(r["date"]).strip()
-                        month = _extract_month(d)
-                        if month is not None and 1 <= month <= 12:
-                            month_vals[month - 1] = round(r["value"] * 100, 2)  # 原始比例 ×100 → 百分比
-                series_list.append({"name": name, "data": month_vals})
+            need_pct = pic["unit"] == "%"  # 仅渗透率等比率数据 ×100
+            for name in legend_names:
+                data_map = {r["date"]: r["value"] for r in pic_rows if r["legend_name"] == name}
+                if need_pct:
+                    series_list.append({"name": name, "data": [round(data_map[d] * 100, 2) if data_map.get(d) is not None else None for d in dates]})
+                else:
+                    series_list.append({"name": name, "data": [data_map.get(d) for d in dates]})
             pic["series"] = series_list
 
         pics.append(pic)
 
-    # mixed 在上，penetration 在下
-    type_order = {"mixed": 0, "penetration": 1}
+    # mixed → bar → line 排序
+    type_order = {"mixed": 0, "bar": 1, "bar_clustered": 1, "line": 2}
     pics.sort(key=lambda p: type_order.get(p.get("type"), 9))
 
     # 日期范围
@@ -300,6 +317,15 @@ def _rows_to_pics(rows):
 # 主流程
 # ============================================================
 
+def _build_render_js(categories):
+    """从 CATEGORIES 自动生成所有 sheet 的 RENDER_MAP 注册 JS"""
+    lines = []
+    for cat in categories:
+        for s in cat.get("sheets", []):
+            lines.append(f"RENDER_MAP['{s['name']}'] = renderPics;")
+    return "\n".join(lines)
+
+
 def main():
     # ---------- 1. 连接 API ----------
     print("[1/4] 连接 API...")
@@ -307,17 +333,25 @@ def main():
 
     # ---------- 2. 获取数据 ----------
     print("[2/4] 获取数据...")
-    print("  [series_meta]")
-    meta_rows = fetch_meta(api)
-    print(f"    获取 {len(meta_rows)} 条元数据")
+    all_meta = []
+    all_data = []
 
-    print("  [data_points]")
-    data_rows = fetch_data_points(api)
-    print(f"    获取 {len(data_rows)} 条数据点")
+    for cat in CATEGORIES:
+        if not cat.get("sheets"):
+            continue
+        print(f"  [{cat['name']}]")
+        if cat.get("api_structure"):
+            meta = fetch_all(getattr(api, cat["api_structure"]), f"{cat['name']}-meta")
+            all_meta.extend(meta)
+        if cat.get("api_value"):
+            data = fetch_all(getattr(api, cat["api_value"]), f"{cat['name']}-data")
+            all_data.extend(data)
+
+    print(f"\n  合计: {len(all_meta)} 条元数据, {len(all_data)} 条数据点")
 
     # ---------- 3. 组装 JSON ----------
     print("[3/4] 组装数据...")
-    json_data = assemble(meta_rows, data_rows)
+    json_data = assemble(all_meta, all_data)
     json_str = json.dumps(json_data, ensure_ascii=False)
 
     # 打印各分类统计
@@ -327,7 +361,7 @@ def main():
 
     # ---------- 4. 生成 HTML ----------
     print("[4/4] 生成 HTML...")
-    render_js = get_ev_sales_js() + get_battery_js() + get_material_js()
+    render_js = _build_render_js(CATEGORIES)
     html = generate_html(json_str, render_js)
 
     with open(OUTPUT_HTML, "w", encoding="utf-8") as f:

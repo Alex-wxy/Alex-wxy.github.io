@@ -115,6 +115,128 @@ function mk(id, opt) {
 
 window.addEventListener('resize', function() { CHARTS_ARR.forEach(function(c) { c.resize(); }); });
 
+// ===== 通用渲染函数（遍历 gd.pics，按 type 渲染） =====
+function renderPics(gd) {
+  var content = document.getElementById('content');
+  var html = '';
+  gd.pics.forEach(function(pic, bi) {
+    html += '<div class="sec" style="border-color:var(--accent)">' + pic.title + '</div>';
+    html += '<div class="grid"><div class="card full">';
+    html += '<div class="ch">悬停图表显示具体数值</div>';
+    html += '<div id="pic_' + bi + '" class="chart" style="height:420px"></div>';
+    html += '<div class="ch" style="text-align:right;margin-top:2px;margin-bottom:0">来源：' + (gd.source || '') + '</div>';
+    html += '</div></div>';
+  });
+  content.innerHTML = html;
+  gd.pics.forEach(function(pic, bi) {
+    var cid = 'pic_' + bi;
+    if (pic.type === 'mixed') {
+      var hasLines = pic.lines && pic.lines.length > 0;
+      var series = [];
+      var BAR_COLORS = pic.bars.length <= 3
+        ? ['#FF8080','#B4CAD8','#FFB2B2']
+        : ['#D4A5A5','#367198','#FF9999','#4A8AB5','#FFB2B2','#6BA5C8','#FFCCCC','#B4CAD8','#FFE5E5'];
+      var LINE_COLORS = ['#044E7E', '#FF0000'];
+      pic.bars.forEach(function(b, i) {
+        var isStacked = b.display_type === 'bar_stacked';
+        series.push({ name: b.name, type: 'bar', stack: isStacked ? 'total' : undefined, data: b.data, itemStyle: { color: BAR_COLORS[i % BAR_COLORS.length] }, emphasis: {} });
+      });
+      if (hasLines) {
+        pic.lines.forEach(function(l, i) {
+          series.push({ name: l.name, type: 'line', yAxisIndex: 1, data: l.data, smooth: true, showSymbol: false, lineStyle: { width: 1.5, color: LINE_COLORS[i % LINE_COLORS.length] }, itemStyle: { color: LINE_COLORS[i % LINE_COLORS.length] }, emphasis: {} });
+        });
+      }
+      var ch = mk(cid, {
+        color: PALETTE,
+        tooltip: { trigger: 'axis', backgroundColor: '#ffffff', borderColor: '#B4CAD8', textStyle: { color: '#367198' },
+          formatter: function(ps) {
+            if (!ps.length) return '';
+            var s = ps[0].axisValue + '<br>';
+            ps.forEach(function(p) {
+              if (p.value != null) {
+                var unit = (p.seriesName.indexOf('同比') >= 0 || p.seriesName.indexOf('环比') >= 0) ? (pic.right_unit || '%') : ' ' + (pic.left_unit || '万辆');
+                s += p.marker + p.seriesName + '：' + p.value.toFixed(2) + unit + '<br>';
+              }
+            });
+            return s;
+          }
+        },
+        legend: { top: 5, left: 'center', textStyle: { color: '#5a7d99' }, itemWidth: 18, itemHeight: 10 },
+        grid: { left: 60, right: hasLines ? 65 : 20, top: 50, bottom: 45 },
+        xAxis: { type: 'category', data: pic.dates, axisLine: { lineStyle: { color: '#B4CAD8' } }, axisLabel: { color: '#5a7d99', interval: 11 } },
+        yAxis: hasLines ? [
+          { type: 'value', name: pic.left_unit || '万辆', splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } },
+          { type: 'value', name: pic.right_unit || '%', splitLine: { show: false }, axisLabel: { color: '#5a7d99' } }
+        ] : [
+          { type: 'value', name: pic.left_unit || '万辆', splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } }
+        ],
+        dataZoom: [{ type: 'slider', start: 0, end: 100, height: 22, bottom: 10 }, { type: 'inside', start: 0, end: 100, zoomOnMouseWheel: true, moveOnMouseMove: true }],
+        series: series
+      });
+      if (ch) { ch.on('datazoom', function(ev) { if (ev.batch) ev = ev.batch[0]; var v = ev.end - ev.start; var iv = v > 80 ? 11 : v > 40 ? 5 : v > 15 ? 2 : 0; ch.setOption({ xAxis: { axisLabel: { interval: iv } } }); }); }
+    } else if (pic.type === 'bar' || pic.type === 'bar_clustered') {
+      var series = [];
+      var BAR_COLORS = pic.bars.length <= 3
+        ? ['#FF8080','#B4CAD8','#FFB2B2']
+        : ['#D4A5A5','#367198','#FF9999','#4A8AB5','#FFB2B2','#6BA5C8','#FFCCCC','#B4CAD8','#FFE5E5'];
+      pic.bars.forEach(function(b, i) {
+        var isStacked = b.display_type === 'bar_stacked';
+        series.push({ name: b.name, type: 'bar', stack: isStacked ? 'total' : undefined, data: b.data, itemStyle: { color: BAR_COLORS[i % BAR_COLORS.length] }, emphasis: {} });
+      });
+      var ch = mk(cid, {
+        color: PALETTE,
+        tooltip: { trigger: 'axis', backgroundColor: '#ffffff', borderColor: '#B4CAD8', textStyle: { color: '#367198' },
+          formatter: function(ps) {
+            if (!ps.length) return '';
+            var s = ps[0].axisValue + '<br>';
+            ps.forEach(function(p) {
+              if (p.value != null) s += p.marker + p.seriesName + '：' + p.value.toFixed(2) + ' ' + (pic.left_unit || '') + '<br>';
+            });
+            return s;
+          }
+        },
+        legend: { top: 5, left: 'center', textStyle: { color: '#5a7d99' }, itemWidth: 18, itemHeight: 10 },
+        grid: { left: 60, right: 20, top: 50, bottom: 45 },
+        xAxis: { type: 'category', data: pic.dates, axisLine: { lineStyle: { color: '#B4CAD8' } }, axisLabel: { color: '#5a7d99', interval: 11 } },
+        yAxis: { type: 'value', name: pic.left_unit || '', splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } },
+        dataZoom: [{ type: 'slider', start: 0, end: 100, height: 22, bottom: 10 }, { type: 'inside', start: 0, end: 100, zoomOnMouseWheel: true, moveOnMouseMove: true }],
+        series: series
+      });
+      if (ch) { ch.on('datazoom', function(ev) { if (ev.batch) ev = ev.batch[0]; var v = ev.end - ev.start; var iv = v > 80 ? 11 : v > 40 ? 5 : v > 15 ? 2 : 0; ch.setOption({ xAxis: { axisLabel: { interval: iv } } }); }); }
+    } else if (pic.type === 'line') {
+      var penSeries = (pic.series || []).map(function(s, yi) {
+        var hot = yi === (pic.series.length - 1);
+        return { name: s.name, type: 'line', data: s.data, connectNulls: false, symbol: 'circle',
+          symbolSize: hot ? 6 : 4,
+          lineStyle: { width: hot ? 3.5 : 1.8, color: PALETTE[yi % PALETTE.length] },
+          itemStyle: { color: PALETTE[yi % PALETTE.length] },
+          emphasis: {}, z: hot ? 10 : 1 };
+      });
+      var lineOpt = {
+        color: PALETTE,
+        tooltip: { trigger: 'axis', backgroundColor: '#ffffff', borderColor: '#B4CAD8', textStyle: { color: '#367198' },
+          formatter: function(ps) {
+            if (!ps.length) return '';
+            var s = ps[0].axisValue + '<br>';
+            ps.forEach(function(p) { s += p.marker + p.seriesName + '：' + (p.value != null ? p.value.toFixed(2) + (pic.unit || '%') : '-') + '<br>'; });
+            return s;
+          }
+        },
+        legend: { top: 5, left: 'center', textStyle: { color: '#5a7d99', fontSize: 11 }, inactiveColor: '#B4CAD8', itemWidth: 16, itemHeight: 8 },
+        grid: { left: 55, right: 15, top: 40, bottom: pic.dates && pic.dates.length > 12 ? 45 : 28 },
+        xAxis: { type: 'category', data: pic.dates || MONTHS, axisLine: { lineStyle: { color: '#B4CAD8' } }, axisLabel: { color: '#5a7d99', interval: pic.dates && pic.dates.length > 12 ? 11 : 0 } },
+        yAxis: { type: 'value', name: pic.unit || '%', nameTextStyle: { color: '#5a7d99', padding: [0, 45, 0, 0] }, scale: true, splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } },
+        series: penSeries
+      };
+      if (pic.dates && pic.dates.length > 12) {
+        lineOpt.dataZoom = [{ type: 'slider', start: 0, end: 100, height: 22, bottom: 10 }, { type: 'inside', start: 0, end: 100, zoomOnMouseWheel: true, moveOnMouseMove: true }];
+      }
+      var ch = mk(cid, lineOpt);
+      if (ch && pic.dates && pic.dates.length > 12) { ch.on('datazoom', function(ev) { if (ev.batch) ev = ev.batch[0]; var v = ev.end - ev.start; var iv = v > 80 ? 11 : v > 40 ? 5 : v > 15 ? 2 : 0; ch.setOption({ xAxis: { axisLabel: { interval: iv } } }); }); }
+    }
+  });
+}
+
 // ===== 一级导航（大分类） =====
 (function() {
   var tnav = document.getElementById('tnav');

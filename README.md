@@ -6,16 +6,15 @@
 
 ```
 Website/
-├── build.py              # 入口：拉取 API → 组装 JSON → 生成 index.html
-├── build_common.py       # 公共：CSS 样式、HTML 骨架、导航 JS
-├── build_ev_sales.py     # 新能源车销量 JS 渲染函数
-├── build_battery.py      # 电池产销及装机数据（占位）
-├── build_material.py     # 锂电材料价格及排产数据（占位）
+├── build.py              # 入口：API 配置、CATEGORIES 导航、数据拉取组装、RENDER_MAP 生成
+├── build_common.py       # 公共：CSS 样式、HTML 骨架、导航 JS、renderPics 通用渲染
 ├── data/                 # Excel 数据源（历史，已废弃）
 ├── requirements.txt      # 依赖
 ├── index.html            # 构建输出（GitHub Pages 部署）
 └── README.md
 ```
+
+新增 sheet 只需在 `build.py` 的 `CATEGORIES` 加一行，侧边栏和图表自动生效。
 
 ## 环境要求
 
@@ -38,6 +37,28 @@ python build.py
 
 构建完成后打开 `index.html` 即可在浏览器中查看。
 
+## 数据流
+
+```
+中台 API (三个分类各一对接口)
+  │  structure + value
+  │  series_meta + data_points
+  ▼
+build.py
+  │  join by (pic_title, legend_name)
+  │  按 sheet_name → pic_title 分组
+  │  按 pic_type + display_type 组装
+  ▼
+JSON → 注入 HTML 模板
+  │
+  ▼
+index.html (静态文件，GitHub Pages 部署)
+  │  renderPics() 按 type 渲染 ECharts
+  │  mixed → 堆积/簇状柱 + 折线
+  │  bar   → 纯柱状图
+  │  line  → 纯折线（月份/日期）
+```
+
 ## 技术栈
 
 - **后端**：Python + 中信建投中台 API（`shangjian_api`）
@@ -49,5 +70,5 @@ python build.py
 | 模块 | 来源 |
 |------|------|
 | 新能源车销量 | Marklines / 中汽协 / 乘联会 / 欧洲各国官网 |
-| 电池产销及装机 | 待补充 |
-| 锂电材料价格及排产 | 待补充 |
+| 电池产销及装机 | 暂未给出 |
+| 锂电材料价格及排产 | 暂未给出 |
