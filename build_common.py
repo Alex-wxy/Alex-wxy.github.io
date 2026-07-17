@@ -83,7 +83,7 @@ HTML_HEAD = '''<!DOCTYPE html>
 </div>
 
 <footer>
-  数据来源：Marklines、中汽协、乘联会、欧洲各国官网，中信建投证券整理<br>
+  数据来源：<span id="footer_source"></span>，中信建投证券整理<br>
   注：本数据根据公开资料整理，不构成任何投资建议。
 </footer>
 
@@ -165,10 +165,10 @@ function renderPics(gd) {
         grid: { left: 60, right: hasLines ? 65 : 20, top: 50, bottom: 45 },
         xAxis: { type: 'category', data: pic.dates, axisLine: { lineStyle: { color: '#B4CAD8' } }, axisLabel: { color: '#5a7d99', interval: 11 } },
         yAxis: hasLines ? [
-          { type: 'value', name: pic.left_unit || '万辆', splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } },
-          { type: 'value', name: pic.right_unit || '%', splitLine: { show: false }, axisLabel: { color: '#5a7d99' } }
+          { type: 'value', name: pic.left_unit || '万辆', min: 0, splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } },
+          { type: 'value', name: pic.right_unit || '%', min: 0, splitLine: { show: false }, axisLabel: { color: '#5a7d99' } }
         ] : [
-          { type: 'value', name: pic.left_unit || '万辆', splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } }
+          { type: 'value', name: pic.left_unit || '万辆', min: 0, splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } }
         ],
         dataZoom: [{ type: 'slider', start: 0, end: 100, height: 22, bottom: 10 }, { type: 'inside', start: 0, end: 100, zoomOnMouseWheel: true, moveOnMouseMove: true }],
         series: series
@@ -198,7 +198,7 @@ function renderPics(gd) {
         legend: { top: 5, left: 'center', textStyle: { color: '#5a7d99' }, itemWidth: 18, itemHeight: 10 },
         grid: { left: 60, right: 20, top: 50, bottom: 45 },
         xAxis: { type: 'category', data: pic.dates, axisLine: { lineStyle: { color: '#B4CAD8' } }, axisLabel: { color: '#5a7d99', interval: 11 } },
-        yAxis: { type: 'value', name: pic.left_unit || '', splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } },
+        yAxis: { type: 'value', name: pic.left_unit || '', min: 0, splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } },
         dataZoom: [{ type: 'slider', start: 0, end: 100, height: 22, bottom: 10 }, { type: 'inside', start: 0, end: 100, zoomOnMouseWheel: true, moveOnMouseMove: true }],
         series: series
       });
@@ -225,7 +225,7 @@ function renderPics(gd) {
         legend: { top: 5, left: 'center', textStyle: { color: '#5a7d99', fontSize: 11 }, inactiveColor: '#B4CAD8', itemWidth: 16, itemHeight: 8 },
         grid: { left: 55, right: 15, top: 40, bottom: pic.dates && pic.dates.length > 12 ? 45 : 28 },
         xAxis: { type: 'category', data: pic.dates || MONTHS, axisLine: { lineStyle: { color: '#B4CAD8' } }, axisLabel: { color: '#5a7d99', interval: pic.dates && pic.dates.length > 12 ? 11 : 0 } },
-        yAxis: { type: 'value', name: pic.unit || '%', nameTextStyle: { color: '#5a7d99', padding: [0, 45, 0, 0] }, scale: true, splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } },
+        yAxis: { type: 'value', name: pic.unit || '%', nameTextStyle: { color: '#5a7d99', padding: [0, 45, 0, 0] }, min: 0, splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } },
         series: penSeries
       };
       if (pic.dates && pic.dates.length > 12) {
@@ -264,7 +264,15 @@ function renderPics(gd) {
 
   function switchCategory(cat) {
     currentTopCat = cat;
-    metaInfo.innerHTML = cat.name + ' · 数据区间：<b>' + (cat.dateRange || '待录入') + '</b> · 来源：中信建投证券整理';
+    metaInfo.innerHTML = cat.name + ' · 数据区间：<b>' + (cat.dateRange || '待录入') + '</b>';
+
+    // 底部来源：收集该分类下所有 sheet 的 source 去重
+    var sources = [];
+    cat.sheets.forEach(function(sn) {
+      var sd = cat.sheetData[sn];
+      if (sd && sd.source && sources.indexOf(sd.source) < 0) sources.push(sd.source);
+    });
+    document.getElementById('footer_source').textContent = sources.join('、') || '';
 
     // 渲染二级导航（sheet 侧边栏 + 子项）
     sidebar.innerHTML = '';

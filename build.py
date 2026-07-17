@@ -49,11 +49,11 @@ CATEGORIES = [
         "api_structure": "batterysales__structure",
         "api_value": "batterysales__value",
         "sheets": [
-            {"name": "国内电池产销",       "source": "暂未给出"},
-            {"name": "国内动力电池装机量",       "source": "暂未给出"},
-            {"name": "动力电池单车带电量", "source": "暂未给出"},
-            {"name": "全球动力电池装机量", "source": "暂未给出"},
-            {"name": "头部电池厂商排产",   "source": "暂未给出"},
+            {"name": "国内电池产销",       "source": "动力电池创新联盟"},
+            {"name": "国内动力电池装机量",       "source": "动力电池创新联盟"},
+            {"name": "动力电池单车带电量", "source": "动力电池创新联盟"},
+            {"name": "全球动力电池装机量", "source": "SNE Research"},
+            {"name": "头部电池厂商排产",   "source": "鑫椤资讯"},
         ],
     },
     {
@@ -61,8 +61,8 @@ CATEGORIES = [
         "api_structure": "lithiumprice__structure",
         "api_value": "lithiumprice__value",
         "sheets": [
-            {"name": "价格变化展示格式",     "source": "暂未给出"},
-            {"name": "头部锂电材料厂商排产", "source": "暂未给出"},
+            {"name": "价格变化展示格式",     "source": "鑫椤资讯"},
+            {"name": "头部锂电材料厂商排产", "source": "鑫椤资讯"},
         ],
     },
 ]
