@@ -61,7 +61,7 @@ CATEGORIES = [
         "api_structure": "lithiumprice__structure",
         "api_value": "lithiumprice__value",
         "sheets": [
-            {"name": "价格变化展示格式",     "source": "鑫椤资讯"},
+            {"name": "锂电材料价格跟踪",     "source": "鑫椤资讯"},
             {"name": "头部锂电材料厂商排产", "source": "鑫椤资讯"},
         ],
     },
