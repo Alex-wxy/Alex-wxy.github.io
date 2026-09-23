@@ -101,6 +101,16 @@ const PALETTE = [
 ];
 const RENDER_MAP = {};
 
+// ===== 单个图表定制：指定折线顺序 + 配色 =====
+// 国内动力电池单车带电量：汽车平均带电量置前（红色高亮），BEV/PHEV 置后（蓝色系）
+const PIC_CUSTOM = {
+  '国内动力电池单车带电量': {
+    order: ['汽车平均带电量', 'BEV乘用车平均带电量', 'PHEV乘用车平均带电量'],
+    color: { '汽车平均带电量': '#C00000', 'BEV乘用车平均带电量': '#044E7E', 'PHEV乘用车平均带电量': '#4A8AB5' },
+    hot: '汽车平均带电量'
+  }
+};
+
 // ===== 渲染函数注册 =====
 __RENDER_JS__
 
@@ -143,7 +153,8 @@ function renderPics(gd) {
       });
       if (hasLines) {
         pic.lines.forEach(function(l, i) {
-          series.push({ name: l.name, type: 'line', yAxisIndex: 1, data: l.data, smooth: true, showSymbol: false, lineStyle: { width: 1.5, color: LINE_COLORS[i % LINE_COLORS.length] }, itemStyle: { color: LINE_COLORS[i % LINE_COLORS.length] }, emphasis: {} });
+          series.push({ name: l.name, type: 'line', yAxisIndex: 1, data: l.data, smooth: true, showSymbol: false, lineStyle: { width: 1.5, color: LINE_COLORS[i % LINE_COLORS.length] }, itemStyle: { color: LINE_COLORS[i % LINE_COLORS.length] }, emphasis: {},
+            markLine: i === 0 ? { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: '#C4D6E4', type: 'dashed', width: 1 }, data: [{ yAxis: 0 }] } : undefined });
         });
       }
       var ch = mk(cid, {
@@ -166,7 +177,7 @@ function renderPics(gd) {
         xAxis: { type: 'category', data: pic.dates, axisLine: { lineStyle: { color: '#B4CAD8' } }, axisLabel: { color: '#5a7d99', interval: 11 } },
         yAxis: hasLines ? [
           { type: 'value', name: pic.left_unit || '万辆', min: 0, splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } },
-          { type: 'value', name: pic.right_unit || '%', min: 0, splitLine: { show: false }, axisLabel: { color: '#5a7d99' } }
+          { type: 'value', name: pic.right_unit || '%', splitLine: { show: false }, axisLabel: { color: '#5a7d99' } }
         ] : [
           { type: 'value', name: pic.left_unit || '万辆', min: 0, splitLine: { lineStyle: { color: '#B5E1FD' } }, axisLabel: { color: '#5a7d99' } }
         ],
@@ -204,12 +215,20 @@ function renderPics(gd) {
       });
       if (ch) { ch.on('datazoom', function(ev) { if (ev.batch) ev = ev.batch[0]; var v = ev.end - ev.start; var iv = v > 80 ? 11 : v > 40 ? 5 : v > 15 ? 2 : 0; ch.setOption({ xAxis: { axisLabel: { interval: iv } } }); }); }
     } else if (pic.type === 'line') {
-      var penSeries = (pic.series || []).map(function(s, yi) {
-        var hot = yi === (pic.series.length - 1);
+      var picSeries = pic.series || [];
+      var custom = PIC_CUSTOM[pic.title];
+      if (custom && custom.order) {
+        var byName = {};
+        picSeries.forEach(function(s) { byName[s.name] = s; });
+        picSeries = custom.order.map(function(n) { return byName[n]; }).filter(function(s) { return s; });
+      }
+      var penSeries = picSeries.map(function(s, yi) {
+        var hot = custom && custom.hot ? (s.name === custom.hot) : (yi === picSeries.length - 1);
+        var col = custom && custom.color ? (custom.color[s.name] || PALETTE[yi % PALETTE.length]) : PALETTE[yi % PALETTE.length];
         return { name: s.name, type: 'line', data: s.data, connectNulls: false, symbol: 'circle',
           symbolSize: hot ? 6 : 4,
-          lineStyle: { width: hot ? 3.5 : 1.8, color: PALETTE[yi % PALETTE.length] },
-          itemStyle: { color: PALETTE[yi % PALETTE.length] },
+          lineStyle: { width: hot ? 3.5 : 1.8, color: col },
+          itemStyle: { color: col },
           emphasis: {}, z: hot ? 10 : 1 };
       });
       var lineOpt = {
